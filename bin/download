@@ -1,20 +1,92 @@
 #!/usr/bin/env python3
 
+import os
 import sys
+import inspect
+import requests
+
+# Allow importing from parent module
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0, parentdir) 
+
+from common import files
 
 def main():
+    if not os.path.exists('temp'):
+        os.mkdir('temp')
+    os.chdir('temp')
+
     version = None
     if len(sys.argv) > 1:
         version = sys.argv[1]
     else: version = determine_latest_version()
-    
-    print(f"Downloading tools for {version}...")
+    if version == None: return 1
+    print(f"Minecraft...{version}")
 
-    # if (len(sys.argv) == 1)
+    tools_version = determine_closest_tools_version(version)
+    if tools_version == None: return 1
+    print(f"Tools.......{tools_version[0]}")
+
+    result = download_tools(tools_version[1])
+    if not result:
+        return 1
+
+    files.extract_zip_archive(os.path.join(os.getcwd(), 'minecraft-tools.zip'))
+    print("Done!")
+
     return 0
 
 def determine_latest_version():
     return "1.18.1"
+
+def determine_closest_tools_version(target_version):
+    manifest_result = requests.get('https://launchermeta.mojang.com/mc/game/version_manifest.json')
+    if manifest_result.status_code != 200:
+        print(f"Error: Unable to fetch version manifest (status code: {manifest_result.status_code})")
+        return None
+    
+    releases_result = requests.get('https://api.github.com/repos/mworzala/minecraft-tools/releases', 
+                                   headers={'Accept': 'application/vnd.github.v3+json'})
+    if releases_result.status_code != 200:
+        print(f"Error: Unable to fetch release list (status code: {releases_result.status_code})")
+        return None
+    
+    versions = list(map(lambda x: (x['id'], x['type']), manifest_result.json()['versions']))
+    releases = list(map(lambda x: (x['tag_name'], x['assets_url']), releases_result.json()))
+
+    index = 0
+    # Find the exact version if possible
+    while index < len(versions):
+        if versions[index][0] == target_version:
+            break
+        index += 1
+    
+    if (index == len(versions)):
+        print(f"Error: Nonexistent version {target_version}")
+        return None
+    
+    while index < len(versions):
+        ver_name = versions[index][0]
+        for release in releases:
+            if release[0] == ver_name:
+                return release
+        index += 1
+    
+    print(f"Error: Unable to find release for version {target_version}")
+    return None
+
+def download_tools(assets_url):
+    assets_result = requests.get(assets_url, headers={'Accept': 'application/vnd.github.v3+json'})
+    if assets_result.status_code != 200:
+        print(f"Error: Unable to fetch assets (status code: {assets_result.status_code})")
+        return False
+    
+    for asset in assets_result.json():
+        if asset['name'] != 'minecraft-tools.zip': continue
+
+    result = files.download_file(asset['browser_download_url'], 'minecraft-tools.zip')
+    return result
 
 if __name__ == '__main__':
     sys.exit(main())
