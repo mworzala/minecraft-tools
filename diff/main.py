@@ -17,14 +17,32 @@ def main():
         os.mkdir('temp')
     os.chdir('temp')
 
-    version = None
-    if len(sys.argv) > 1:
-        version = sys.argv[1]
-    else: version = determine_latest_version()
-    if version == None: return 1
-    print(f"Minecraft...{version}")
+    source_version = None
+    target_version = None
 
-    result = download_client(version)
+    if len(sys.argv) > 1:
+        source_version = sys.argv[1]
+    else: 
+        print("Error: No source version specified")
+        return 1
+    if source_version == None: return 1
+    print(f"Source...{source_version}")
+
+    if len(sys.argv) > 2:
+        target_version = sys.argv[2]
+    else:
+        print("Error: No target version specified")
+        return 1
+    if target_version == None: return 1
+    print(f"Target...{target_version}")
+
+    if source_version != "none":
+        # os.system(f"git checkout {source_version}")
+        return 0
+    else:
+        os.system(f"git checkout -b {target_version}_moj_all")
+
+    result = download_client(target_version)
     if not result: return 1
 
     result = reconstruct.download_latest()
@@ -41,6 +59,11 @@ def main():
     if not result: return 1
 
     print("Done!")
+
+    os.system(f"cp -r temp/server_decompiled/** .")
+    os.system(f"git add .")
+    os.system(f"git commit -m \"{target_version}\"")
+    os.system(f"git push origin {target_version}_moj_all")
 
     return 0
 
