@@ -54,16 +54,23 @@ def main():
 
     print("Done!")
 
-    if source_version != "none":
-        # os.system(f"git checkout {source_version}")
-        return 0
-    else:
-        os.system(f"git checkout -b {target_version}_moj_all")
+    os.chdir("..")
 
-    os.system(f"cp -r temp/server_decompiled/** .")
+    if source_version != "none":
+        print(f"git checkout {source_version}_moj_protocol")
+        os.system(f"git checkout {source_version}_moj_protocol")
+    
+    print(f"git checkout -b {target_version}_moj_protocol")
+    os.system(f"git checkout -b {target_version}_moj_protocol")
+
+    print(f"cp -r temp/server_decompiled/net/minecraft/network/protocol/** .")
+    os.system(f"cp -r temp/server_decompiled/net/minecraft/network/protocol/** .")
+    print(f"git add .")
     os.system(f"git add .")
+    print(f"git commit -m \"{target_version}\"")
     os.system(f"git commit -m \"{target_version}\"")
-    os.system(f"git push origin {target_version}_moj_all")
+    print(f"git push origin {target_version}_moj_protocol")
+    os.system(f"git push origin {target_version}_moj_protocol")
 
     return 0
 
