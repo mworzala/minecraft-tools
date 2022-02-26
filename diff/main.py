@@ -36,12 +36,6 @@ def main():
     if target_version == None: return 1
     print(f"Target...{target_version}")
 
-    if source_version != "none":
-        # os.system(f"git checkout {source_version}")
-        return 0
-    else:
-        os.system(f"git checkout -b {target_version}_moj_all")
-
     result = download_client(target_version)
     if not result: return 1
 
@@ -59,6 +53,12 @@ def main():
     if not result: return 1
 
     print("Done!")
+
+    if source_version != "none":
+        # os.system(f"git checkout {source_version}")
+        return 0
+    else:
+        os.system(f"git checkout -b {target_version}_moj_all")
 
     os.system(f"cp -r temp/server_decompiled/** .")
     os.system(f"git add .")
